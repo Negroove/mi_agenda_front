@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/auth_api.dart';
 
 class AuthProvider extends ChangeNotifier {
   SharedPreferences? _prefs;
@@ -7,41 +8,45 @@ class AuthProvider extends ChangeNotifier {
   bool _isAuth = false;
   bool get isAuth => _isAuth;
 
-  static const _demoUser = 'admin@mail';
-  static const _demoPass = '123456';
+  final _api = AuthApi();
 
-  // Inicializa el provider cargando el estado de autenticación desde SharedPreferences.
   Future<void> init() async {
     if (_loaded) return;
     _prefs = await SharedPreferences.getInstance();
-    _isAuth = _prefs?.getBool('auth_ok') ?? false;
+    final token = _prefs?.getString('token');
+    _isAuth = _isValidJwt(token);
     _loaded = true;
     notifyListeners();
   }
 
-  /// Simula un login.
-  /// - Retorna true si el login fue exitoso. False si no.
-  Future<bool> login(String email, String password) async {
-    await Future.delayed(const Duration(milliseconds: 400)); // simula IO
-    final ok = email.trim() == _demoUser && password == _demoPass;
-    _isAuth = ok;
-    notifyListeners();
+  Future<bool> login(String usuario, String password) async {
+    final token = await _api.login(usuario, password);
 
-    if (ok) {
-      await (_prefs ??= await SharedPreferences.getInstance()).setBool(
-        'auth_ok',
-        true,
-      );
+    if (!_isValidJwt(token)) {
+      _isAuth = false;
+      notifyListeners();
+      return false;
     }
-    return ok;
+
+    final jwt = token!;
+    await (_prefs ??= await SharedPreferences.getInstance())
+        .setString('token', jwt);
+
+    _isAuth = true;
+    notifyListeners();
+    return true;
   }
 
   Future<void> logout() async {
     _isAuth = false;
     notifyListeners();
-    await (_prefs ??= await SharedPreferences.getInstance()).setBool(
-      'auth_ok',
-      false,
-    );
+
+    await (_prefs ??= await SharedPreferences.getInstance()).remove('token');
+  }
+
+  bool _isValidJwt(String? token) {
+    return token != null &&
+        token.trim().isNotEmpty &&
+        token.split('.').length == 3;
   }
 }

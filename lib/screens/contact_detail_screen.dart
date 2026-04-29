@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mi_agenda/screens/widgets/contact_form_screen.dart';
 import 'package:provider/provider.dart';
-import '../models/contact.dart';
 import '../providers/contacts_provider.dart';
-import '../screens/login_screen.dart';
 
 class ContactDetailScreen extends StatelessWidget {
   final String contactId;
@@ -86,7 +84,7 @@ class ContactDetailScreen extends StatelessWidget {
   showDialog(
     context: context,
     builder: (_) => Dialog(
-      backgroundColor: theme.dialogBackgroundColor,
+      backgroundColor: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(22),
@@ -125,9 +123,12 @@ class ContactDetailScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: () async {
-                  await context.read<ContactsProvider>().delete(id);
-                  Navigator.pop(context);
-                  Navigator.pop(context);
+                  final contacts = context.read<ContactsProvider>();
+                  final navigator = Navigator.of(context);
+
+                  await contacts.delete(id);
+                  navigator.pop();
+                  navigator.pop();
                 },
                 child: const Text('Eliminar', style: TextStyle(fontSize: 16)),
               ),

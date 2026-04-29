@@ -47,9 +47,10 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
+    final auth = context.read<AuthProvider>();
     // cargamos SharedPreferences e hidratamos isAuth
     Future.microtask(() async {
-      await context.read<AuthProvider>().init();
+      await auth.init();
       if (mounted) setState(() => _ready = true);
     });
   }

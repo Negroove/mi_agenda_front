@@ -1,27 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// OJO con la ruta relativa: estás 2 carpetas por debajo de lib/
 import '../../providers/auth_provider.dart';
 
-/// Formulario de login desacoplado de la pantalla.
-/// - Maneja estado local (texto, foco, loading, ocultar/mostrar contraseña).
-/// - Valida datos.
-/// - Llama al AuthProvider (la lógica de login vive en el provider).
-/// - NO navega: si tu main.dart es "reactivo", la app cambia sola a Contactos.
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
+
   @override
   State<LoginForm> createState() => _LoginFormState();
 }
 
 class _LoginFormState extends State<LoginForm> {
-  
   final _formKey = GlobalKey<FormState>();
 
-  final _emailCtrl = TextEditingController();
+  final _usuarioCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
 
-  final _emailFocus = FocusNode();
+  final _usuarioFocus = FocusNode();
   final _passFocus = FocusNode();
 
   bool _loading = false;
@@ -29,47 +23,50 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   void dispose() {
-    _emailFocus.dispose();
+    _usuarioFocus.dispose();
     _passFocus.dispose();
-    _emailCtrl.dispose();
+    _usuarioCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
   }
 
-// Valida email y password
-  String? _validateEmail(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Ingrese su email';
-    if (!v.contains('@')) return 'Email inválido';
+  String? _validateUsuario(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Ingrese su usuario';
     return null;
   }
 
   String? _validatePass(String? v) {
-    if (v == null || v.isEmpty) return 'Ingrese su contraseña';
-    if (v.length < 6) return 'Mínimo 6 caracteres';
+    if (v == null || v.isEmpty) return 'Ingrese su contrasena';
     return null;
   }
 
   void _goToPassword() => _passFocus.requestFocus();
   void _toggleObscure() => setState(() => _obscure = !_obscure);
 
-  /// Llama al AuthProvider para hacer login.
   Future<void> _submit() async {
-    FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) return;
+  FocusScope.of(context).unfocus();
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _loading = true); // muestra loading
-    final auth = context.read<AuthProvider>(); 
-    final ok = await auth.login(_emailCtrl.text.trim(), _passCtrl.text); 
+  setState(() => _loading = true);
 
-    if (!mounted) return; // 
-    setState(() => _loading = false); 
+  final auth = context.read<AuthProvider>();
+  final usuario = _usuarioCtrl.text.trim();
+  final password = _passCtrl.text.trim();
 
-    if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Credenciales inválidas')),
-      );
-    }
+  debugPrint('LoginForm.submit usuario: $usuario');
+  debugPrint('LoginForm.submit password length: ${password.length}');
+
+  final ok = await auth.login(usuario, password);
+
+  if (!mounted) return;
+  setState(() => _loading = false);
+
+  if (!ok) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Credenciales invalidas')),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -79,21 +76,25 @@ class _LoginFormState extends State<LoginForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Usuario', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          const Text(
+            'Usuario',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
           const SizedBox(height: 6),
           TextFormField(
-            controller: _emailCtrl,
-            focusNode: _emailFocus,
-            keyboardType: TextInputType.emailAddress,
+            controller: _usuarioCtrl,
+            focusNode: _usuarioFocus,
+            keyboardType: TextInputType.text,
             textInputAction: TextInputAction.next,
             onFieldSubmitted: (_) => _goToPassword(),
-            decoration: const InputDecoration(hintText: 'Ingrese email'),
-            validator: _validateEmail,
+            decoration: const InputDecoration(hintText: 'Ingrese usuario'),
+            validator: _validateUsuario,
           ),
-
           const SizedBox(height: 14),
-
-          const Text('Contraseña', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          const Text(
+            'Contrasena',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
           const SizedBox(height: 6),
           TextFormField(
             controller: _passCtrl,
@@ -110,17 +111,16 @@ class _LoginFormState extends State<LoginForm> {
             ),
             validator: _validatePass,
           ),
-
           const SizedBox(height: 18),
-
           ElevatedButton(
             onPressed: _loading ? null : _submit,
             child: _loading
                 ? const SizedBox(
-                    height: 20, width: 20,
+                    height: 20,
+                    width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Iniciar sesión'),
+                : const Text('Iniciar sesion'),
           ),
         ],
       ),
