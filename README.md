@@ -1,77 +1,123 @@
 # mi_agenda
 
-Aplicación Flutter moderna para gestionar contactos, con Provider para manejo de estado y SQLite para persistencia real.
+Aplicacion Flutter para gestionar contactos usando Provider, autenticacion JWT y una API REST en .NET.
 
-## 📌 Descripción
+## Descripcion
 
-**mi_agenda** es una app completa de gestión de contactos. Incluye autenticación de demostración, listado con búsqueda avanzada, vista de detalle, creación, edición y eliminación de contactos.  
-Utiliza **Provider**, **SQLite (sqflite)**, estilos globales y soporte total para **tema oscuro**.
+**mi_agenda** permite iniciar sesion, listar, buscar, crear, editar y eliminar contactos contra un backend real. La app usa `Provider` para manejar estado, `http` para consumir la API, `shared_preferences` para guardar el JWT y pantallas Flutter simples para el flujo de contactos.
 
----
+## Funcionalidades
 
-## 🚀 Funcionalidades
+### Autenticacion
 
-### 🔐 Login de demostración
-- Usuario: `admin@mail`
-- Contraseña: `123456`
+- Login contra `POST /api/auth/login`.
+- Persistencia del JWT con `SharedPreferences`.
+- Envio automatico del token en requests protegidos.
+- Validacion basica de JWT guardado.
+- Logout desde la pantalla de contactos.
 
-### 📇 Contactos
-- Crear contacto
-- Editar contacto (detalle reactivo, siempre actualizado)
-- Eliminar contacto con diálogo personalizado
-- Avatar generado con iniciales
-- Persistencia local con SQLite
+### Contactos
 
-### 🔎 Búsqueda avanzada (en tiempo real)
-Podés buscar por:
-- Nombre  
-- Apellido  
-- Teléfono  
-- Email  
+- Listado desde `GET /api/contacto`.
+- Creacion con `POST /api/contacto/add`.
+- Edicion con `PUT /api/contacto/update/{id}`.
+- Eliminacion con `DELETE /api/contacto/delete/{id}`.
+- Recarga de lista desde backend despues de crear, editar o eliminar.
+- Busqueda local en tiempo real por nombre, apellido, telefono o email.
+- Vista de detalle por `contactId`.
+- Avatar generado con iniciales.
 
-### 🗑️ Diálogo de eliminación personalizado
-- Botón **Eliminar** usando el color primario del tema
-- Botón **Cancelar** estilo oscuro
-- Ambos botones full-width y alineados verticalmente
+### Estado y errores
 
-### 🎨 Tema oscuro y estilos globales
-- AppBar estilizado
-- Botones con tema global
-- Inputs unificados
-- Colores consistentes según AppTheme
+`ContactsProvider` maneja:
 
-### 🧩 Arquitectura basada en Provider
-- `AuthProvider` para login
-- `ContactsProvider` para CRUD, búsqueda y carga desde SQLite
-- Detalle del contacto basado en ID para obtener siempre datos actualizados
+- `items`: lista actual de contactos.
+- `isLoading`: estado de carga para operaciones async.
+- `error`: mensaje de error cuando falla la API.
 
----
+Las llamadas a la API usan `ApiException` para incluir mensaje y `statusCode`.
 
-## 📁 Estructura del proyecto
+### Tests
+
+La app incluye tests automaticos sin Mockito ni librerias externas:
+
+- Tests unitarios de `ContactsProvider`.
+- `FakeContactsApi` para simular GET, POST, PUT, DELETE y errores.
+- Widget tests basicos para `LoginForm`.
+
+## API
+
+La URL base se configura en:
+
+```dart
+lib/data/api_config.dart
 ```
 
+Para emulador Android se usa:
+
+```dart
+static const String baseUrl = 'http://10.0.2.2:5234';
+```
+
+Endpoints usados:
+
+```text
+POST   /api/auth/login
+GET    /api/contacto
+POST   /api/contacto/add
+PUT    /api/contacto/update/{id}
+DELETE /api/contacto/delete/{id}
+```
+
+Los endpoints de contactos envian:
+
+```text
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+## Estructura del proyecto
+
+```text
 lib/
-├─ app_theme.dart # Tema global (colores, estilos)
-├─ main.dart # Providers + AuthGate
-├─ models/
-│ └─ contact.dart # Modelo Contact
-├─ data/
-│ └─ contacts_db.dart # CRUD SQLite
-├─ providers/
-│ ├─ auth_provider.dart # Autenticación fake
-│ └─ contacts_provider.dart # Manejo de contactos + búsqueda
-├─ screens/
-│ ├─ login_screen.dart
-│ ├─ contacts_screen.dart # Lista + búsqueda + navegación
-│ ├─ contact_detail_screen.dart # Vista detallada reactiva
-│ └─ contact_form_screen.dart # Alta / edición con validaciones
-└─ widgets/
-│ └─ login_form.dart # Formulario
-└─ login_form.dart
-```
----
+|-- app_theme.dart
+|-- main.dart
+|-- models/
+|   `-- contact.dart
+|-- data/
+|   |-- api_config.dart
+|   |-- auth_api.dart
+|   |-- contacts_api.dart
+|   `-- contacts_db.dart
+|-- providers/
+|   |-- auth_provider.dart
+|   `-- contacts_provider.dart
+`-- screens/
+    |-- login_screen.dart
+    |-- contacts_screen.dart
+    |-- contact_detail_screen.dart
+    `-- widgets/
+        |-- contact_form_screen.dart
+        `-- login_form.dart
 
-## ▶️ Primeros pasos
+test/
+|-- contacts_provider_test.dart
+|-- login_form_test.dart
+`-- fakes/
+    `-- fake_contacts_api.dart
+```
+
+## Dependencias principales
+
+- `provider`
+- `http`
+- `shared_preferences`
+- `intl`
+- `flutter_test`
+
+`sqflite` y `path` siguen instalados por compatibilidad con codigo local previo, aunque el flujo principal actual usa la API REST.
+
+## Primeros pasos
 
 Instalar dependencias:
 
@@ -79,7 +125,20 @@ Instalar dependencias:
 flutter pub get
 ```
 
-Ejecutar en dispositivo o emulador:
+Ejecutar la app:
+
 ```bash
 flutter run
 ```
+
+Ejecutar tests:
+
+```bash
+flutter test
+```
+
+## Notas de desarrollo
+
+- Si se corre en emulador Android, `10.0.2.2` apunta al localhost de la maquina host.
+- Android tiene habilitado `INTERNET` y trafico HTTP cleartext para desarrollo local.
+- Para probar contra un dispositivo fisico, cambiar `baseUrl` por la IP de la maquina donde corre la API.
