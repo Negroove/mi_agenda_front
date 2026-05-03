@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/auth_api.dart';
@@ -45,8 +47,27 @@ class AuthProvider extends ChangeNotifier {
   }
 
   bool _isValidJwt(String? token) {
-    return token != null &&
-        token.trim().isNotEmpty &&
-        token.split('.').length == 3;
+    if (token == null || token.trim().isEmpty) return false;
+
+    final parts = token.split('.');
+    if (parts.length != 3) return false;
+
+    try {
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+
+      if (payload is! Map<String, dynamic>) return false;
+
+      final exp = payload['exp'];
+      if (exp is int) {
+        final expiresAt = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+        return expiresAt.isAfter(DateTime.now());
+      }
+
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }

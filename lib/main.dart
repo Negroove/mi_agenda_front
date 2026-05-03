@@ -5,7 +5,6 @@ import 'providers/auth_provider.dart';
 import 'providers/contacts_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/contacts_screen.dart';
-import 'data/contacts_db.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +20,7 @@ class MyApp extends StatelessWidget {
       // proveedores de estados
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ContactsProvider(ContactsDb())),
+        ChangeNotifierProvider(create: (_) => ContactsProvider()),
       ],
       // la app en si
       child: MaterialApp(

@@ -15,13 +15,13 @@ class ContactsScreen extends StatefulWidget {
 class _ContactsScreenState extends State<ContactsScreen> {
   bool _searchMode = false;
   final _searchCtrl = TextEditingController();
-  Future<void>? _loadFuture;
 
   @override
   void initState() {
     super.initState();
-    // ⬅️ CARGA DE CONTACTOS DESDE SQLite
-    _loadFuture = context.read<ContactsProvider>().load();
+    Future.microtask(() {
+      context.read<ContactsProvider>().load();
+    });
   }
 
   @override
@@ -32,96 +32,96 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _loadFuture,
-      builder: (_, snap) {
-        if (snap.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    final provider = context.watch<ContactsProvider>();
+    final query = _searchCtrl.text.trim();
+    final contacts = query.isEmpty ? provider.items : provider.searchBy(query);
 
-        final provider = context.watch<ContactsProvider>();
-        final query = _searchCtrl.text.trim();
-        final contacts = query.isEmpty
-            ? provider.items
-            : provider.searchBy(query);
-
-        return Scaffold(
-          appBar: AppBar(
-            title: _searchMode
-                ? TextField(
-                    controller: _searchCtrl,
-                    autofocus: true,
-                    decoration: const InputDecoration(
-                      hintText: 'Buscar...',
-                      border: InputBorder.none,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  )
-                : const Text('Contactos'),
-            leading: _searchMode
-                ? IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      _searchCtrl.clear();
-                      setState(() => _searchMode = false);
-                    },
-                  )
-                : null,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () => setState(() => _searchMode = true),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'logout') {
-                    context.read<AuthProvider>().logout();
-                  }
+    return Scaffold(
+      appBar: AppBar(
+        title: _searchMode
+            ? TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Buscar...',
+                  border: InputBorder.none,
+                ),
+                onChanged: (_) => setState(() {}),
+              )
+            : const Text('Contactos'),
+        leading: _searchMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  _searchCtrl.clear();
+                  setState(() => _searchMode = false);
                 },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'logout', child: Text('Cerrar sesión')),
-                ],
-              ),
+              )
+            : null,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => setState(() => _searchMode = true),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'logout') {
+                context.read<AuthProvider>().logout();
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'logout', child: Text('Cerrar sesion')),
             ],
           ),
-          body: contacts.isEmpty
-              ? const Center(child: Text('No hay contactos aún'))
-              : ListView.separated(
-                  itemCount: contacts.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    final c = contacts[i];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        child: Text(
-                          c.iniciales,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      title: Text('${c.nombre} ${c.apellido}'),
-                      subtitle: Text('${c.telefono} · ${c.email}'),
-                      // ⬅️ AHORA SÍ NAVEGA AL DETALLE
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ContactDetailScreen(contactId: c.id),
+        ],
+      ),
+      body: provider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : provider.error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      provider.error!,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
+              : contacts.isEmpty
+                  ? const Center(child: Text('No hay contactos aun'))
+                  : ListView.separated(
+                      itemCount: contacts.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, i) {
+                        final c = contacts[i];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            child: Text(
+                              c.iniciales,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
+                          title: Text('${c.nombre} ${c.apellido}'),
+                          subtitle: Text('${c.telefono} - ${c.email}'),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ContactDetailScreen(contactId: c.id),
+                              ),
+                            );
+                          },
                         );
                       },
-                    );
-                  },
-                ),
-          floatingActionButton: FloatingActionButton(
-            child: const Icon(Icons.add),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ContactFormScreen()),
-            ),
-          ),
-        );
-      },
+                    ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ContactFormScreen()),
+        ),
+      ),
     );
   }
 }

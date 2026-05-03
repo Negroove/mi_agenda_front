@@ -11,9 +11,9 @@ class AuthApi {
 
     try {
       final body = jsonEncode({
-  'usuario': usuario.trim(),
-  'password': password.trim(),
-});
+        'usuario': usuario.trim(),
+        'password': password.trim(),
+      });
 
       final res = await http.post(
         url,
@@ -49,6 +49,27 @@ class AuthApi {
   }
 
   bool _isValidJwt(String token) {
-    return token.trim().isNotEmpty && token.split('.').length == 3;
+    if (token.trim().isEmpty) return false;
+
+    final parts = token.split('.');
+    if (parts.length != 3) return false;
+
+    try {
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+
+      if (payload is! Map<String, dynamic>) return false;
+
+      final exp = payload['exp'];
+      if (exp is int) {
+        final expiresAt = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+        return expiresAt.isAfter(DateTime.now());
+      }
+
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }

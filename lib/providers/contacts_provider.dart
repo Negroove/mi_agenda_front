@@ -1,46 +1,103 @@
 import 'package:flutter/foundation.dart';
 import '../models/contact.dart';
-import '../data/contacts_db.dart';
+import '../data/contacts_api.dart';
 
 class ContactsProvider extends ChangeNotifier {
-  final ContactsDb _db;
-  ContactsProvider(this._db);
+  final ContactsApi _api;
+
+  ContactsProvider({ContactsApi? api}) : _api = api ?? ContactsApi();
 
   bool _loaded = false;
+  bool isLoading = false;
+  String? error;
+
   final List<Contact> _contacts = [];
 
   List<Contact> get items => List.unmodifiable(_contacts);
 
   Future<void> load() async {
     if (_loaded) return;
-    await _db.open();
-    _contacts
-      ..clear()
-      ..addAll(await _db.getAll());
-    _loaded = true;
+
+    isLoading = true;
+    error = null;
     notifyListeners();
+
+    try {
+      final contactsFromApi = await _api.getAll();
+
+      _contacts
+        ..clear()
+        ..addAll(contactsFromApi);
+
+      _loaded = true;
+    } catch (e) {
+      error = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
-  // metodos crud
   Future<void> add(Contact c) async {
-    await _db.insert(c);
-    _contacts.add(c);
+    isLoading = true;
+    error = null;
     notifyListeners();
+
+    try {
+      await _api.create(c);
+      final contactsFromApi = await _api.getAll();
+
+      _contacts
+        ..clear()
+        ..addAll(contactsFromApi);
+
+      _loaded = true;
+    } catch (e) {
+      error = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> update(Contact c) async {
-    await _db.update(c);
-    final index = _contacts.indexWhere((x) => x.id == c.id);
-    if (index != -1) {
-      _contacts[index] = c;
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      await _api.update(c);
+      final contactsFromApi = await _api.getAll();
+
+      _contacts
+        ..clear()
+        ..addAll(contactsFromApi);
+    } catch (e) {
+      error = e.toString();
+    } finally {
+      isLoading = false;
       notifyListeners();
     }
   }
 
   Future<void> delete(String id) async {
-    await _db.deleteById(id);
-    _contacts.removeWhere((c) => c.id == id);
+    isLoading = true;
+    error = null;
     notifyListeners();
+
+    try {
+      await _api.delete(id);
+      final contactsFromApi = await _api.getAll();
+
+      _contacts
+        ..clear()
+        ..addAll(contactsFromApi);
+    } catch (e) {
+      error = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   String normalize(String s) {
@@ -48,7 +105,7 @@ class ContactsProvider extends ChangeNotifier {
   }
 
   List<Contact> searchBy(String query) {
-    final q = query.toLowerCase();
+    final q = normalize(query);
 
     return _contacts.where((c) {
       return normalize(c.nombre).contains(q) ||
