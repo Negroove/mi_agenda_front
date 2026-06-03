@@ -53,8 +53,8 @@ flutter run
 ## Usuario de prueba
 
 ```text
-Usuario: admin123
-Password: 1234
+Usuario: USUARIO_DE_PRUEBA
+Password: PASSWORD_DE_PRUEBA
 ```
 
 ## Funcionalidades
