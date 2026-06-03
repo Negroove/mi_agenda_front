@@ -5,8 +5,6 @@ class Contact {
   final String email;
   final String telefono;
   final String? avatarUrl; 
-  final String direccion;
-  final DateTime? fechaNacimiento;
 
   const Contact({
     required this.id,
@@ -14,8 +12,6 @@ class Contact {
     required this.apellido,
     required this.email,
     required this.telefono,
-    required this.direccion,          
-    this.fechaNacimiento, 
     this.avatarUrl,
   });
 

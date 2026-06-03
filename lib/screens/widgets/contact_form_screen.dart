@@ -3,7 +3,6 @@ import 'package:mi_agenda/models/contact.dart';
 import 'package:mi_agenda/providers/contacts_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 
 
 class ContactFormScreen extends StatefulWidget {
@@ -23,9 +22,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
   final _apellidoCtrl = TextEditingController();
   final _telCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _dirCtrl = TextEditingController();
 
-  DateTime? _fechaNac;
   bool _saving = false;
 
   @override
@@ -39,8 +36,6 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
       _apellidoCtrl.text = c.apellido;
       _telCtrl.text = c.telefono;
       _emailCtrl.text = c.email;
-      _dirCtrl.text = c.direccion;
-      _fechaNac = c.fechaNacimiento;
     }
   }
 
@@ -50,7 +45,6 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
     _apellidoCtrl.dispose();
     _telCtrl.dispose();
     _emailCtrl.dispose();
-    _dirCtrl.dispose();
     super.dispose();
   }
 
@@ -62,19 +56,6 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
     if (_req(v, 'el email') != null) return 'Ingrese el email';
     if (!(v!.contains('@') && v.contains('.'))) return 'Email inválido';
     return null;
-  }
-
-  Future<void> _pickFecha() async {
-    final now = DateTime.now();
-    final ini = DateTime(now.year - 80);
-    final fin = DateTime(now.year + 1);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _fechaNac ?? DateTime(now.year - 20),
-      firstDate: ini,
-      lastDate: fin,
-    );
-    if (picked != null) setState(() => _fechaNac = picked);
   }
 
   Future<void> _save() async {
@@ -93,8 +74,6 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
         apellido: _apellidoCtrl.text.trim(),
         telefono: _telCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
-        direccion: _dirCtrl.text.trim(),
-        fechaNacimiento: _fechaNac,
       );
 
       await context.read<ContactsProvider>().add(contact);
@@ -108,8 +87,6 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
         apellido: _apellidoCtrl.text.trim(),
         telefono: _telCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
-        direccion: _dirCtrl.text.trim(),
-        fechaNacimiento: _fechaNac,
       );
 
       await context.read<ContactsProvider>().update(updated);
@@ -122,11 +99,6 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Formatear fecha
-    final f = _fechaNac == null
-        ? 'Sin definir'
-        : DateFormat('dd/MM/yyyy').format(_fechaNac!);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.edit == null ? 'Nuevo contacto' : 'Editar contacto'),
@@ -202,38 +174,6 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-
-                // Dirección
-                TextFormField(
-                  controller: _dirCtrl,
-                  decoration: const InputDecoration(labelText: 'Dirección'),
-                  textInputAction: TextInputAction.next,
-                  validator: (v) => _req(v, 'la dirección'),
-                ),
-                const SizedBox(height: 12),
-
-                // Fecha nacimiento
-                Row(
-                  children: [
-                    Expanded(
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Fecha de nacimiento',
-                          border: OutlineInputBorder(),
-                        ),
-                        child: Text(f),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: _pickFecha,
-                      icon: const Icon(Icons.date_range),
-                      label: const Text('Elegir'),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
 
                 // Botón guardar
                 SizedBox(

@@ -1,35 +1,57 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'api_config.dart';
+import 'api_client.dart';
 
 class AuthApi {
-  Future<String?> login(String usuario, String password) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/login');
+  AuthApi({ApiClient? client}) : _client = client ?? ApiClient();
 
+  final ApiClient _client;
+
+  Future<bool> register(String usuario, String password) async {
     try {
-      final body = jsonEncode({
-        'usuario': usuario.trim(),
-        'password': password.trim(),
-      });
-
-      final res = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: body,
+      final res = await _client.dio.post(
+        '/api/auth/register',
+        data: {
+          'usuario': usuario.trim(),
+          'password': password.trim(),
+        },
       );
 
-      debugPrint('AuthApi.login url: $url');
-      debugPrint('AuthApi.login statusCode: ${res.statusCode}');
-      debugPrint('AuthApi.login response body: ${res.body}');
+      debugPrint('AuthApi.register statusCode: ${res.statusCode}');
+      debugPrint('AuthApi.register response body: ${res.data}');
 
-      if (res.statusCode < 200 || res.statusCode >= 300) {
+      return _isSuccess(res.statusCode);
+    } on DioException catch (e) {
+      debugPrint('AuthApi.register error: ${e.message}');
+      return false;
+    } catch (e) {
+      debugPrint('AuthApi.register error: $e');
+      return false;
+    }
+  }
+
+  Future<String?> login(String usuario, String password) async {
+    try {
+      final res = await _client.dio.post(
+        '/api/auth/login',
+        data: {
+          'usuario': usuario.trim(),
+          'password': password.trim(),
+        },
+      );
+
+      debugPrint('AuthApi.login statusCode: ${res.statusCode}');
+      debugPrint('AuthApi.login response body: ${res.data}');
+
+      if (!_isSuccess(res.statusCode)) {
         return null;
       }
 
-      final decoded = jsonDecode(res.body);
+      final decoded = _responseAsMap(res.data);
       if (decoded is! Map<String, dynamic>) {
         debugPrint('AuthApi.login error: respuesta JSON inesperada.');
         return null;
@@ -37,15 +59,33 @@ class AuthApi {
 
       final token = decoded['token'] ?? decoded['accessToken'];
       if (token is String && _isValidJwt(token)) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
         return token;
       }
 
       debugPrint('AuthApi.login error: no se encontro token JWT valido.');
       return null;
+    } on DioException catch (e) {
+      debugPrint('AuthApi.login error: ${e.message}');
+      return null;
     } catch (e) {
       debugPrint('AuthApi.login error: $e');
       return null;
     }
+  }
+
+  bool _isSuccess(int? statusCode) {
+    return statusCode != null && statusCode >= 200 && statusCode < 300;
+  }
+
+  Map<String, dynamic>? _responseAsMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is String) {
+      final decoded = jsonDecode(data);
+      if (decoded is Map<String, dynamic>) return decoded;
+    }
+    return null;
   }
 
   bool _isValidJwt(String token) {

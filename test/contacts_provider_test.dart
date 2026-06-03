@@ -18,8 +18,6 @@ void main() {
       apellido: apellido,
       telefono: telefono,
       email: email,
-      direccion: '',
-      fechaNacimiento: null,
     );
   }
 

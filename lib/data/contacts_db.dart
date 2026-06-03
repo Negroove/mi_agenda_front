@@ -17,9 +17,7 @@ class ContactsDb {
             nombre TEXT NOT NULL,
             apellido TEXT NOT NULL,
             telefono TEXT NOT NULL,
-            email TEXT NOT NULL,
-            direccion TEXT NOT NULL,
-            fecha_nac INTEGER NULL
+            email TEXT NOT NULL
           );
         ''');
       },
@@ -36,10 +34,6 @@ class ContactsDb {
             apellido: m['apellido'] as String,
             telefono: m['telefono'] as String,
             email: m['email'] as String,
-            direccion: m['direccion'] as String,
-            fechaNacimiento: (m['fecha_nac'] == null)
-                ? null
-                : DateTime.fromMillisecondsSinceEpoch(m['fecha_nac'] as int),
           ),
         )
         .toList();
@@ -52,8 +46,6 @@ class ContactsDb {
       'apellido': c.apellido,
       'telefono': c.telefono,
       'email': c.email,
-      'direccion': c.direccion,
-      'fecha_nac': c.fechaNacimiento?.millisecondsSinceEpoch,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -65,8 +57,6 @@ class ContactsDb {
         'apellido': c.apellido,
         'telefono': c.telefono,
         'email': c.email,
-        'direccion': c.direccion,
-        'fecha_nac': c.fechaNacimiento?.millisecondsSinceEpoch,
       },
       where: 'id = ?',
       whereArgs: [c.id],

@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import '../models/contact.dart';
-import 'api_config.dart';
+import 'api_client.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -16,121 +15,119 @@ class ApiException implements Exception {
 }
 
 class ContactsApi {
-  Future<Map<String, String>> _authHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+  ContactsApi({ApiClient? client}) : _client = client ?? ApiClient();
 
-    if (token == null || token.trim().isEmpty) {
-      throw const ApiException('No hay token de autenticacion guardado');
-    }
-
-    return {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
-  }
+  final ApiClient _client;
 
   Future<void> create(Contact c) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/contacto/add');
-
-    final res = await http.post(
-      url,
-      headers: await _authHeaders(),
-      body: jsonEncode({
+    final res = await _client.dio.post(
+      '/api/contacto/add',
+      data: {
         'nombre': c.nombre,
         'apellido': c.apellido,
         'telefono': c.telefono,
         'email': c.email,
-      }),
+      },
     );
 
-    debugPrint('ContactsApi.create url: $url');
     debugPrint('ContactsApi.create statusCode: ${res.statusCode}');
-    debugPrint('ContactsApi.create response body: ${res.body}');
+    debugPrint('ContactsApi.create response body: ${res.data}');
 
     if (res.statusCode != 201) {
       throw ApiException(
-        'Error al crear contacto: ${res.body}',
+        'Error al crear contacto: ${res.data}',
         res.statusCode,
       );
     }
   }
 
   Future<List<Contact>> getAll() async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/contacto');
-
     try {
-      final res = await http.get(
-        url,
-        headers: await _authHeaders(),
-      );
+      final res = await _client.dio.get('/api/contacto');
 
-      debugPrint('ContactsApi.getAll url: $url');
       debugPrint('ContactsApi.getAll statusCode: ${res.statusCode}');
-      debugPrint('ContactsApi.getAll response body: ${res.body}');
+      debugPrint('ContactsApi.getAll response body: ${res.data}');
 
-      if (res.statusCode < 200 || res.statusCode >= 300) {
+      if (!_isSuccess(res.statusCode)) {
         throw ApiException(
-          'Error al obtener contactos: ${res.body}',
+          'Error al obtener contactos: ${res.data}',
           res.statusCode,
         );
       }
 
-      final decoded = jsonDecode(res.body);
+      final decoded = _decodeResponse(res.data);
       final data = _extractContactsList(decoded);
 
       return data.map(_contactFromJson).toList();
+    } on DioException catch (e) {
+      debugPrint('ContactsApi.getAll error: ${e.message}');
+      throw ApiException('Error al obtener contactos: ${e.message}');
     } catch (e) {
       debugPrint('ContactsApi.getAll error: $e');
       rethrow;
     }
   }
 
-  Future<void> update(Contact c) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/contacto/update/${c.id}');
+  Future<Contact> getById(String id) async {
+    final res = await _client.dio.get('/api/contacto/$id');
 
-    final res = await http.put(
-      url,
-      headers: await _authHeaders(),
-      body: jsonEncode({
-        'id': c.id,
+    debugPrint('ContactsApi.getById statusCode: ${res.statusCode}');
+    debugPrint('ContactsApi.getById response body: ${res.data}');
+
+    if (!_isSuccess(res.statusCode)) {
+      throw ApiException(
+        'Error al obtener contacto: ${res.data}',
+        res.statusCode,
+      );
+    }
+
+    final decoded = _decodeResponse(res.data);
+    return _contactFromJson(decoded);
+  }
+
+  Future<void> update(Contact c) async {
+    final res = await _client.dio.put(
+      '/api/contacto/edit/${c.id}',
+      data: {
         'nombre': c.nombre,
         'apellido': c.apellido,
         'telefono': c.telefono,
         'email': c.email,
-      }),
+      },
     );
 
-    debugPrint('ContactsApi.update url: $url');
     debugPrint('ContactsApi.update statusCode: ${res.statusCode}');
-    debugPrint('ContactsApi.update response body: ${res.body}');
+    debugPrint('ContactsApi.update response body: ${res.data}');
 
-    if (res.statusCode < 200 || res.statusCode >= 300) {
+    if (!_isSuccess(res.statusCode)) {
       throw ApiException(
-        'Error al actualizar contacto: ${res.body}',
+        'Error al actualizar contacto: ${res.data}',
         res.statusCode,
       );
     }
   }
 
   Future<void> delete(String id) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/contacto/delete/$id');
+    final res = await _client.dio.delete('/api/contacto/delete/$id');
 
-    final res = await http.delete(
-      url,
-      headers: await _authHeaders(),
-    );
-
-    debugPrint('ContactsApi.delete url: $url');
     debugPrint('ContactsApi.delete statusCode: ${res.statusCode}');
-    debugPrint('ContactsApi.delete response body: ${res.body}');
+    debugPrint('ContactsApi.delete response body: ${res.data}');
 
-    if (res.statusCode < 200 || res.statusCode >= 300) {
+    if (!_isSuccess(res.statusCode)) {
       throw ApiException(
-        'Error al eliminar contacto: ${res.body}',
+        'Error al eliminar contacto: ${res.data}',
         res.statusCode,
       );
     }
+  }
+
+  bool _isSuccess(int? statusCode) {
+    return statusCode != null && statusCode >= 200 && statusCode < 300;
+  }
+
+  dynamic _decodeResponse(dynamic data) {
+    if (data is String) return jsonDecode(data);
+    return data;
   }
 
   List<dynamic> _extractContactsList(dynamic decoded) {
@@ -156,13 +153,6 @@ class ContactsApi {
       apellido: (value['apellido'] ?? '').toString(),
       telefono: (value['telefono'] ?? '').toString(),
       email: (value['email'] ?? '').toString(),
-      direccion: (value['direccion'] ?? '').toString(),
-      fechaNacimiento: _parseDate(value['fechaNacimiento']),
     );
-  }
-
-  DateTime? _parseDate(dynamic value) {
-    if (value == null) return null;
-    return DateTime.tryParse(value.toString());
   }
 }

@@ -61,17 +61,6 @@ class ContactDetailScreen extends StatelessWidget {
             Text('Email: ${contact.email}', style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 6),
 
-            Text('Dirección: ${contact.direccion}', style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 6),
-
-            if (contact.fechaNacimiento != null)
-              Text(
-                'Fecha de nacimiento: '
-                '${contact.fechaNacimiento!.day}/'
-                '${contact.fechaNacimiento!.month}/'
-                '${contact.fechaNacimiento!.year}',
-                style: const TextStyle(fontSize: 16),
-              ),
           ],
         ),
       ),
