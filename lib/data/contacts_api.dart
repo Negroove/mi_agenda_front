@@ -43,7 +43,7 @@ class ContactsApi {
 
   Future<List<Contact>> getAll() async {
     try {
-      final res = await _client.dio.get('/api/contacto');
+      final res = await _client.dio.get('/minimal/contactos');
 
       debugPrint('ContactsApi.getAll statusCode: ${res.statusCode}');
       debugPrint('ContactsApi.getAll response body: ${res.data}');
