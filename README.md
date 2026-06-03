@@ -1,128 +1,47 @@
-# mi_agenda
+# Mi Agenda Front
 
-Aplicacion Flutter para gestionar contactos usando Provider, autenticacion JWT y una API REST en .NET.
+Aplicacion Flutter para gestionar contactos consumiendo una Web API .NET 8 llamada `ContactosApi`.
 
-## Descripcion
+La app usa `Dio` para comunicarse con el backend, con un cliente centralizado en `lib/data/api_client.dart` y autenticacion JWT mediante interceptor.
 
-**mi_agenda** permite iniciar sesion, listar, buscar, crear, editar y eliminar contactos contra un backend real. La app usa `Provider` para manejar estado, `http` para consumir la API, `shared_preferences` para guardar el JWT y pantallas Flutter simples para el flujo de contactos.
+## Requisitos previos
 
-## Funcionalidades
+- Flutter instalado.
+- Emulador Android o dispositivo fisico.
+- Backend .NET 8 levantado en la maquina local:
 
-### Autenticacion
+```text
+http://localhost:5234
+```
 
-- Login contra `POST /api/auth/login`.
-- Persistencia del JWT con `SharedPreferences`.
-- Envio automatico del token en requests protegidos.
-- Validacion basica de JWT guardado.
-- Logout desde la pantalla de contactos.
+## URL de la API
 
-### Contactos
+Para Android Emulator, la app usa:
 
-- Listado desde `GET /api/contacto`.
-- Creacion con `POST /api/contacto/add`.
-- Edicion con `PUT /api/contacto/update/{id}`.
-- Eliminacion con `DELETE /api/contacto/delete/{id}`.
-- Recarga de lista desde backend despues de crear, editar o eliminar.
-- Busqueda local en tiempo real por nombre, apellido, telefono o email.
-- Vista de detalle por `contactId`.
-- Avatar generado con iniciales.
+```text
+http://10.0.2.2:5234
+```
 
-### Estado y errores
+Esta URL apunta desde el emulador al `localhost` de la maquina donde corre el backend.
 
-`ContactsProvider` maneja:
+La configuracion se encuentra en:
 
-- `items`: lista actual de contactos.
-- `isLoading`: estado de carga para operaciones async.
-- `error`: mensaje de error cuando falla la API.
-
-Las llamadas a la API usan `ApiException` para incluir mensaje y `statusCode`.
-
-### Tests
-
-La app incluye tests automaticos sin Mockito ni librerias externas:
-
-- Tests unitarios de `ContactsProvider`.
-- `FakeContactsApi` para simular GET, POST, PUT, DELETE y errores.
-- Widget tests basicos para `LoginForm`.
-
-## API
-
-La URL base se configura en:
-
-```dart
+```text
 lib/data/api_config.dart
 ```
 
-Para emulador Android se usa:
-
-```dart
-static const String baseUrl = 'http://10.0.2.2:5234';
-```
-
-Endpoints usados:
-
-```text
-POST   /api/auth/login
-GET    /api/contacto
-POST   /api/contacto/add
-PUT    /api/contacto/update/{id}
-DELETE /api/contacto/delete/{id}
-```
-
-Los endpoints de contactos envian:
-
-```text
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-## Estructura del proyecto
-
-```text
-lib/
-|-- app_theme.dart
-|-- main.dart
-|-- models/
-|   `-- contact.dart
-|-- data/
-|   |-- api_config.dart
-|   |-- auth_api.dart
-|   |-- contacts_api.dart
-|   `-- contacts_db.dart
-|-- providers/
-|   |-- auth_provider.dart
-|   `-- contacts_provider.dart
-`-- screens/
-    |-- login_screen.dart
-    |-- contacts_screen.dart
-    |-- contact_detail_screen.dart
-    `-- widgets/
-        |-- contact_form_screen.dart
-        `-- login_form.dart
-
-test/
-|-- contacts_provider_test.dart
-|-- login_form_test.dart
-`-- fakes/
-    `-- fake_contacts_api.dart
-```
-
-## Dependencias principales
-
-- `provider`
-- `http`
-- `shared_preferences`
-- `intl`
-- `flutter_test`
-
-`sqflite` y `path` siguen instalados por compatibilidad con codigo local previo, aunque el flujo principal actual usa la API REST.
-
-## Primeros pasos
+## Ejecucion
 
 Instalar dependencias:
 
 ```bash
 flutter pub get
+```
+
+Analizar el proyecto:
+
+```bash
+flutter analyze
 ```
 
 Ejecutar la app:
@@ -131,14 +50,80 @@ Ejecutar la app:
 flutter run
 ```
 
-Ejecutar tests:
+## Usuario de prueba
 
-```bash
-flutter test
+```text
+Usuario: admin123
+Password: 1234
 ```
 
-## Notas de desarrollo
+## Funcionalidades
 
-- Si se corre en emulador Android, `10.0.2.2` apunta al localhost de la maquina host.
-- Android tiene habilitado `INTERNET` y trafico HTTP cleartext para desarrollo local.
-- Para probar contra un dispositivo fisico, cambiar `baseUrl` por la IP de la maquina donde corre la API.
+- Login.
+- Registro.
+- Listado de contactos.
+- Detalle de contacto.
+- Alta de contacto.
+- Edicion de contacto.
+- Eliminacion de contacto.
+
+## API consumida
+
+Autenticacion:
+
+```text
+POST /api/auth/login
+POST /api/auth/register
+```
+
+Contactos:
+
+```text
+GET    /minimal/contactos
+GET    /api/contacto/{id}
+POST   /api/contacto/add
+PUT    /api/contacto/edit/{id}
+DELETE /api/contacto/delete/{id}
+```
+
+El listado usa `GET /minimal/contactos` porque la consigna del trabajo practico lo pide explicitamente. El resto del CRUD usa endpoints bajo `/api/contacto`.
+
+## Autenticacion JWT
+
+El token JWT se guarda en `SharedPreferences` con la clave:
+
+```text
+token
+```
+
+El interceptor de Dio agrega automaticamente en las requests protegidas:
+
+```text
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+## Modelo Contact
+
+El modelo de contacto usado por Flutter contiene:
+
+```text
+id
+nombre
+apellido
+email
+telefono
+avatarUrl
+```
+
+No se usa `direccion`.
+
+No se usa `fechaNacimiento`.
+
+La base de datos del backend tiene `fechaCreacion`, pero por ahora Flutter no la muestra, no la carga y no la edita.
+
+## Notas importantes
+
+- El backend debe estar corriendo antes de iniciar la app.
+- `/minimal/contactos` esta protegido con JWT y rol Admin.
+- Para probar en un dispositivo fisico, cambiar la URL base por la IP de la maquina donde corre la API.
