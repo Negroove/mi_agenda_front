@@ -61,6 +61,22 @@ class ContactDetailScreen extends StatelessWidget {
             Text('Email: ${contact.email}', style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 6),
 
+            if (contact.domicilio != null) ...[
+              Text(
+                'Direcci\u00f3n: ${contact.domicilio}',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 6),
+            ],
+
+            if (contact.genero != null) ...[
+              Text(
+                'G\u00e9nero: ${contact.genero}',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 6),
+            ],
+
           ],
         ),
       ),

@@ -4,7 +4,9 @@ class Contact {
   final String apellido;
   final String email;
   final String telefono;
-  final String? avatarUrl; 
+  final String? avatarUrl;
+  final String? domicilio;
+  final String? genero;
 
   const Contact({
     required this.id,
@@ -13,6 +15,8 @@ class Contact {
     required this.email,
     required this.telefono,
     this.avatarUrl,
+    this.domicilio,
+    this.genero,
   });
 
 // Retorna las inciales del avatar en caso de no tener imagen

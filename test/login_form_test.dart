@@ -20,7 +20,7 @@ void main() {
     await tester.pumpWidget(buildLoginForm());
 
     expect(find.byType(TextFormField), findsNWidgets(2));
-    expect(find.text('Usuario'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
     expect(find.text('Contrasena'), findsOneWidget);
     expect(find.text('Iniciar sesion'), findsOneWidget);
   });
@@ -31,7 +31,7 @@ void main() {
     await tester.tap(find.text('Iniciar sesion'));
     await tester.pump();
 
-    expect(find.text('Ingrese su usuario'), findsOneWidget);
+    expect(find.text('Ingrese su email'), findsOneWidget);
     expect(find.text('Ingrese su contrasena'), findsOneWidget);
   });
 }

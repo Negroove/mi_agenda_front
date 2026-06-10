@@ -22,6 +22,15 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
   final _apellidoCtrl = TextEditingController();
   final _telCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
+  final _domicilioCtrl = TextEditingController();
+  String? _genero;
+
+  static const _generos = [
+    'Masculino',
+    'Femenino',
+    'Otro',
+    'Prefiero no decir',
+  ];
 
   bool _saving = false;
 
@@ -36,6 +45,8 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
       _apellidoCtrl.text = c.apellido;
       _telCtrl.text = c.telefono;
       _emailCtrl.text = c.email;
+      _domicilioCtrl.text = c.domicilio ?? '';
+      _genero = c.genero;
     }
   }
 
@@ -45,6 +56,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
     _apellidoCtrl.dispose();
     _telCtrl.dispose();
     _emailCtrl.dispose();
+    _domicilioCtrl.dispose();
     super.dispose();
   }
 
@@ -74,6 +86,8 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
         apellido: _apellidoCtrl.text.trim(),
         telefono: _telCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
+        domicilio: _optionalText(_domicilioCtrl.text),
+        genero: _genero,
       );
 
       await context.read<ContactsProvider>().add(contact);
@@ -87,6 +101,8 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
         apellido: _apellidoCtrl.text.trim(),
         telefono: _telCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
+        domicilio: _optionalText(_domicilioCtrl.text),
+        genero: _genero,
       );
 
       await context.read<ContactsProvider>().update(updated);
@@ -95,6 +111,11 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
     if (!mounted) return;
     setState(() => _saving = false);
     Navigator.of(context).pop();
+  }
+
+  String? _optionalText(String value) {
+    final text = value.trim();
+    return text.isEmpty ? null : text;
   }
 
   @override
@@ -172,6 +193,33 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
                     FilteringTextInputFormatter.deny(RegExp(r"\s")),
                     LengthLimitingTextInputFormatter(60),
                   ],
+                ),
+                const SizedBox(height: 12),
+
+                // Domicilio
+                TextFormField(
+                  controller: _domicilioCtrl,
+                  decoration: const InputDecoration(labelText: 'Direcci\u00f3n'),
+                  textInputAction: TextInputAction.next,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(80),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Genero
+                DropdownButtonFormField<String>(
+                  value: _generos.contains(_genero) ? _genero : null,
+                  decoration: const InputDecoration(labelText: 'G\u00e9nero'),
+                  items: _generos
+                      .map(
+                        (g) => DropdownMenuItem(
+                          value: g,
+                          child: Text(g),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _genero = value),
                 ),
                 const SizedBox(height: 12),
 

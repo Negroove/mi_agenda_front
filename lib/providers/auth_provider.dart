@@ -21,8 +21,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String usuario, String password) async {
-    final token = await _api.login(usuario, password);
+  Future<bool> login(String email, String password) async {
+    final token = await _api.login(email, password);
 
     if (!_isValidJwt(token)) {
       _isAuth = false;
@@ -37,6 +37,10 @@ class AuthProvider extends ChangeNotifier {
     _isAuth = true;
     notifyListeners();
     return true;
+  }
+
+  Future<RegisterResult> register(String email, String password) {
+    return _api.register(email, password);
   }
 
   Future<void> logout() async {

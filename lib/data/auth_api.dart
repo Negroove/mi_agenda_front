@@ -6,17 +6,31 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_client.dart';
 
+class RegisterResult {
+  const RegisterResult({
+    required this.success,
+    this.statusCode,
+    this.message,
+  });
+
+  final bool success;
+  final int? statusCode;
+  final String? message;
+
+  bool get alreadyExists => statusCode == 409;
+}
+
 class AuthApi {
   AuthApi({ApiClient? client}) : _client = client ?? ApiClient();
 
   final ApiClient _client;
 
-  Future<bool> register(String usuario, String password) async {
+  Future<RegisterResult> register(String email, String password) async {
     try {
       final res = await _client.dio.post(
         '/api/auth/register',
         data: {
-          'usuario': usuario.trim(),
+          'email': email.trim(),
           'password': password.trim(),
         },
       );
@@ -24,28 +38,35 @@ class AuthApi {
       debugPrint('AuthApi.register statusCode: ${res.statusCode}');
       debugPrint('AuthApi.register response body: ${res.data}');
 
-      return _isSuccess(res.statusCode);
+      return RegisterResult(
+        success: _isSuccess(res.statusCode),
+        statusCode: res.statusCode,
+        message: _responseMessage(res.data),
+      );
     } on DioException catch (e) {
       debugPrint('AuthApi.register error: ${e.message}');
-      return false;
+      return RegisterResult(
+        success: false,
+        statusCode: e.response?.statusCode,
+        message: _responseMessage(e.response?.data),
+      );
     } catch (e) {
       debugPrint('AuthApi.register error: $e');
-      return false;
+      return const RegisterResult(success: false);
     }
   }
 
-  Future<String?> login(String usuario, String password) async {
+  Future<String?> login(String email, String password) async {
     try {
       final res = await _client.dio.post(
         '/api/auth/login',
         data: {
-          'usuario': usuario.trim(),
+          'email': email.trim(),
           'password': password.trim(),
         },
       );
 
       debugPrint('AuthApi.login statusCode: ${res.statusCode}');
-      debugPrint('AuthApi.login response body: ${res.data}');
 
       if (!_isSuccess(res.statusCode)) {
         return null;
@@ -75,6 +96,12 @@ class AuthApi {
     }
   }
 
+  String? _responseMessage(dynamic data) {
+    final decoded = _tryResponseAsMap(data);
+    final message = decoded?['mensaje'] ?? decoded?['message'];
+    return message is String ? message : null;
+  }
+
   bool _isSuccess(int? statusCode) {
     return statusCode != null && statusCode >= 200 && statusCode < 300;
   }
@@ -86,6 +113,14 @@ class AuthApi {
       if (decoded is Map<String, dynamic>) return decoded;
     }
     return null;
+  }
+
+  Map<String, dynamic>? _tryResponseAsMap(dynamic data) {
+    try {
+      return _responseAsMap(data);
+    } catch (_) {
+      return null;
+    }
   }
 
   bool _isValidJwt(String token) {

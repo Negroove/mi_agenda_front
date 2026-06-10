@@ -27,6 +27,8 @@ class ContactsApi {
         'apellido': c.apellido,
         'telefono': c.telefono,
         'email': c.email,
+        'domicilio': c.domicilio,
+        'genero': c.genero,
       },
     );
 
@@ -93,6 +95,8 @@ class ContactsApi {
         'apellido': c.apellido,
         'telefono': c.telefono,
         'email': c.email,
+        'domicilio': c.domicilio,
+        'genero': c.genero,
       },
     );
 
@@ -153,6 +157,13 @@ class ContactsApi {
       apellido: (value['apellido'] ?? '').toString(),
       telefono: (value['telefono'] ?? '').toString(),
       email: (value['email'] ?? '').toString(),
+      domicilio: _optionalString(value['domicilio']),
+      genero: _optionalString(value['genero']),
     );
+  }
+
+  String? _optionalString(dynamic value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
   }
 }
